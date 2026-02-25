@@ -1,26 +1,21 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { RABBIT_SERVICE } from '../config/services';
 
 @Injectable()
 export class AuthService {
-  private readonly userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-
   constructor(
-    private readonly httpService: HttpService,
+    @Inject(RABBIT_SERVICE) private readonly client: ClientProxy,
     private readonly jwtService: JwtService,
   ) {}
 
   async login(loginDto: { email: string; password: string }) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.userServiceUrl}/auth/login`, loginDto)
-      );
-      
-      const user = response.data.user;
+      const response = await firstValueFrom(this.client.send({ cmd: 'auth.login' }, loginDto));
+      const user = response.user || response;
       const payload = { email: user.email, sub: user.id, roles: user.roles };
-      
       return {
         access_token: this.jwtService.sign(payload),
         user: {
@@ -31,25 +26,15 @@ export class AuthService {
         },
       };
     } catch (error) {
-      if (error.response?.status === 401) {
-        throw new HttpException('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
-      }
-      throw new HttpException(
-        'Error en el servicio de autenticación',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
     }
   }
 
   async register(registerDto: any) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.userServiceUrl}/auth/register`, registerDto)
-      );
-      
-      const user = response.data.user;
+      const response = await firstValueFrom(this.client.send({ cmd: 'auth.register' }, registerDto));
+      const user = response.user || response;
       const payload = { email: user.email, sub: user.id, roles: user.roles };
-      
       return {
         access_token: this.jwtService.sign(payload),
         user: {
@@ -60,27 +45,15 @@ export class AuthService {
         },
       };
     } catch (error) {
-      if (error.response?.status === 400) {
-        throw new HttpException(error.response.data.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException(
-        'Error al registrar usuario',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Error al registrar usuario', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
   async getProfile(userId: string) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.userServiceUrl}/users/${userId}`)
-      );
-      return response.data;
+      return await firstValueFrom(this.client.send({ cmd: 'user.findOne' }, { id: userId }));
     } catch (error) {
-      throw new HttpException(
-        'Error al obtener perfil de usuario',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Error al obtener perfil de usuario', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
