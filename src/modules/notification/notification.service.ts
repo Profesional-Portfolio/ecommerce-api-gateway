@@ -1,76 +1,43 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { RABBIT_SERVICE } from '../config/services';
 
 @Injectable()
 export class NotificationService {
-  private readonly notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003';
-
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    @Inject(RABBIT_SERVICE) private readonly client: ClientProxy,
+  ) {}
 
   async findAll(userId: string) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.notificationServiceUrl}/notifications`, {
-          params: { userId }
-        })
-      );
-      return response.data;
+      return await firstValueFrom(this.client.send({ cmd: 'notification.findAll' }, { userId }));
     } catch (error) {
-      throw new HttpException(
-        'Error al obtener notificaciones del microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Error al obtener notificaciones del microservicio', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
   async send(sendNotificationDto: any) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.notificationServiceUrl}/notifications/send`, sendNotificationDto)
-      );
-      return response.data;
+      return await firstValueFrom(this.client.send({ cmd: 'notification.send' }, sendNotificationDto));
     } catch (error) {
-      if (error.response?.status === 400) {
-        throw new HttpException(error.response.data.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException(
-        'Error al enviar notificación en el microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Error al enviar notificación en el microservicio', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
   async markAsRead(id: string, userId: string) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.notificationServiceUrl}/notifications/${id}/read`, { userId })
-      );
-      return response.data;
+      return await firstValueFrom(this.client.send({ cmd: 'notification.markAsRead' }, { id, userId }));
     } catch (error) {
-      if (error.response?.status === 404) {
-        throw new HttpException('Notificación no encontrada', HttpStatus.NOT_FOUND);
-      }
-      throw new HttpException(
-        'Error al marcar notificación como leída',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Notificación no encontrada', HttpStatus.NOT_FOUND);
     }
   }
 
   async getUnreadCount(userId: string) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.notificationServiceUrl}/notifications/unread-count`, {
-          params: { userId }
-        })
-      );
-      return response.data;
+      return await firstValueFrom(this.client.send({ cmd: 'notification.getUnreadCount' }, { userId }));
     } catch (error) {
-      throw new HttpException(
-        'Error al obtener contador de notificaciones no leídas',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
+      throw new HttpException('Error al obtener contador de notificaciones no leídas', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 }
