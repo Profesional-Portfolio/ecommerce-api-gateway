@@ -9,9 +9,11 @@ import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './modules/product/product.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TransportModule } from './modules/transport/transport.module';
 
 @Module({
   imports: [
+    TransportModule,
     HttpModule,
     PassportModule,
     JwtModule.register({

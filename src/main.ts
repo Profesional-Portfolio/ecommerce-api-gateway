@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { env } from './modules/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,11 +22,10 @@ async function bootstrap() {
   // Prefijo global para todas las rutas
   app.setGlobalPrefix('api/v1');
   
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(env.PORT);
   
-  console.log(`🚀 API Gateway ejecutándose en puerto ${port}`);
-  console.log(`📊 Documentación disponible en http://localhost:${port}/api/v1`);
+  console.log(`🚀 API Gateway ejecutándose en puerto ${env.PORT}`);
+  console.log(`📊 Documentación disponible en http://localhost:${env.PORT}/api/v1`);
 }
 
 bootstrap();
