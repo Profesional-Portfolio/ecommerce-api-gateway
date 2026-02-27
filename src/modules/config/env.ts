@@ -4,7 +4,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   PORT: z.string().default('3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  RABBITMQ_URLS: z.array(z.string()).default(['amqp://localhost:5672']),
+  RABBITMQ_URLS: z.array(z.string()),
   RABBITMQ_QUEUE: z.string().default('ecommerce_queue'),
 });
 
@@ -15,6 +15,8 @@ export const result = envSchema.safeParse({
 
 
 if (!result.success) {
+  console.log('Variables', process.env);
+  console.error('Invalid environment variables:', result.error);
   console.error('Invalid environment variables:', z.treeifyError(result.error));
   process.exit(1);
 }

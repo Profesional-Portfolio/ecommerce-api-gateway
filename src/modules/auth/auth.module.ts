@@ -5,10 +5,12 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { TransportModule } from '../transport/transport.module';
 
 @Module({
   imports: [
     HttpModule,
+    TransportModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
