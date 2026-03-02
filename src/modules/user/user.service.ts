@@ -1,92 +1,44 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, Inject } from "@nestjs/common";
+import { ClientProxy, RpcException } from "@nestjs/microservices";
+import { firstValueFrom } from "rxjs";
+import { RABBIT_SERVICE } from "../config/services";
 
 @Injectable()
 export class UserService {
-  private readonly userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    @Inject(RABBIT_SERVICE) private readonly clientProxy: ClientProxy,
+  ) {}
 
   async findAll(query: any) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.userServiceUrl}/users`, { params: query })
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        'Error al obtener usuarios del microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
+    return firstValueFrom(
+      this.clientProxy.send({ cmd: "users.get.all" }, query),
+    );
   }
 
   async findOne(id: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.userServiceUrl}/users/${id}`)
-      );
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
-      }
-      throw new HttpException(
-        'Error al obtener usuario del microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
+    return firstValueFrom(
+      this.clientProxy.send({ cmd: "users.find.one" }, { id }),
+    );
   }
 
   async create(createUserDto: any) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.userServiceUrl}/users`, createUserDto)
-      );
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 400) {
-        throw new HttpException(error.response.data.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException(
-        'Error al crear usuario en el microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
+    return firstValueFrom(
+      this.clientProxy.send({ cmd: "users.create.one" }, createUserDto),
+    );
   }
 
-  async update(id: string, updateUserDto: any) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.put(`${this.userServiceUrl}/users/${id}`, updateUserDto)
-      );
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
-      }
-      throw new HttpException(
-        'Error al actualizar usuario en el microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
+  async update(id: string, updateUserDto: any, user: any) {
+    return firstValueFrom(
+      this.clientProxy.send(
+        { cmd: "users.update.one" },
+        { id, updateUserDto, user },
+      ),
+    );
   }
 
-  async remove(id: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.delete(`${this.userServiceUrl}/users/${id}`)
-      );
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
-      }
-      throw new HttpException(
-        'Error al eliminar usuario del microservicio',
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
+  async remove(id: string, user: any) {
+    return firstValueFrom(
+      this.clientProxy.send({ cmd: "users.remove.one" }, { id, user }),
+    );
   }
 }
