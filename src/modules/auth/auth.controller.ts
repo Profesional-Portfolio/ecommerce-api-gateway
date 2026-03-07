@@ -36,6 +36,16 @@ export class AuthController {
     );
   }
 
+  @Post("logout")
+  @UseGuards(JwtAuthGuard)
+  async logout() {
+    return firstValueFrom(
+      this.clientProxy
+        .send({ cmd: "auth.logout.user" }, null)
+        .pipe(catchError((error) => throwError(() => new RpcException(error)))),
+    );
+  }
+
   @Get("profile")
   @UseGuards(JwtAuthGuard)
   async getProfile(@Request() req: any) {
