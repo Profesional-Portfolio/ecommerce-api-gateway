@@ -14,6 +14,7 @@ import { UserService } from "./user.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { UserPayload } from "../auth/interfaces/user-payload.interface";
 
 @Controller("users")
 export class UserController {
@@ -44,7 +45,7 @@ export class UserController {
   async update(
     @Param("id") id: string,
     @Body() updateUserDto: any,
-    @Request() req: any,
+    @Request() req: { user: UserPayload },
   ) {
     return this.userService.update(id, updateUserDto, req.user);
   }
@@ -52,7 +53,7 @@ export class UserController {
   @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
-  async remove(@Param("id") id: string, @Request() req: any) {
+  async remove(@Param("id") id: string, @Request() req: { user: UserPayload }) {
     return this.userService.remove(id, req.user);
   }
 }
