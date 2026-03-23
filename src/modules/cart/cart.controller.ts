@@ -1,67 +1,68 @@
 import {
-  Controller,
-  Post,
   Body,
-  UseGuards,
+  Controller,
+  Delete,
   Get,
-  Request,
   Inject,
+  Param,
+  Patch,
+  Post,
 } from "@nestjs/common";
-import { ClientProxy, RpcException } from "@nestjs/microservices";
-import { catchError, firstValueFrom, throwError } from "rxjs";
-import { JwtAuthGuard } from "./jwt-auth.guard";
 import { RABBIT_SERVICE } from "../config";
+import { ClientProxy, RpcException } from "@nestjs/microservices";
+import { AddCartItemDto, UpdateCartItemDto } from "./dto";
+import { catchError, firstValueFrom, throwError } from "rxjs";
 
-@Controller("auth")
-export class AuthController {
+@Controller("cart")
+export class CartController {
   constructor(
     @Inject(RABBIT_SERVICE) private readonly clientProxy: ClientProxy,
   ) {}
 
-  @Post("login")
-  async login(@Body() loginDto: { email: string; password: string }) {
+  @Get(":cartId")
+  getCart(@Param("cartId") cartId: string) {
     return firstValueFrom(
       this.clientProxy
-        .send({ cmd: "auth.login.user" }, loginDto)
+        .send({ cmd: "get.cart" }, { cartId })
         .pipe(catchError((error) => throwError(() => new RpcException(error)))),
     );
   }
 
-  @Post("register")
-  async register(@Body() registerDto: any) {
+  @Post()
+  addItem(@Body() addCartItemDto: AddCartItemDto) {
     return firstValueFrom(
       this.clientProxy
-        .send({ cmd: "auth.register.user" }, registerDto)
+        .send({ cmd: "add.cart.item" }, addCartItemDto)
         .pipe(catchError((error) => throwError(() => new RpcException(error)))),
     );
   }
 
-  @Post("logout")
-  @UseGuards(JwtAuthGuard)
-  async logout() {
+  @Patch()
+  updateItem(@Body() updateCartItemDto: UpdateCartItemDto) {
     return firstValueFrom(
       this.clientProxy
-        .send({ cmd: "auth.logout.user" }, null)
+        .send({ cmd: "update.cart.item" }, updateCartItemDto)
         .pipe(catchError((error) => throwError(() => new RpcException(error)))),
     );
   }
 
-  @Get("profile")
-  @UseGuards(JwtAuthGuard)
-  async getProfile(@Request() req: any) {
+  @Delete(":cartId/item/:productId")
+  removeItem(
+    @Param("cartId") cartId: string,
+    @Param("productId") productId: string,
+  ) {
     return firstValueFrom(
       this.clientProxy
-        .send({ cmd: "auth.profile.user" }, req.user.id)
+        .send({ cmd: "remove.cart.item" }, { cartId, productId })
         .pipe(catchError((error) => throwError(() => new RpcException(error)))),
     );
   }
 
-  @Post("refresh")
-  @UseGuards(JwtAuthGuard)
-  async refresh(@Request() req: any) {
+  @Delete(":cartId")
+  clearCart(@Param("cartId") cartId: string) {
     return firstValueFrom(
       this.clientProxy
-        .send({ cmd: "auth.refresh.token" }, req.user)
+        .send({ cmd: "clear.cart" }, { cartId })
         .pipe(catchError((error) => throwError(() => new RpcException(error)))),
     );
   }

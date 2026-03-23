@@ -1,18 +1,36 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { UserService } from './user.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
+import { UserService } from "./user.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserPayload } from "../auth/interfaces/user-payload.interface";
 
-@Controller('users')
+@Controller("users")
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
   async findAll(@Query() query: any) {
     return this.userService.findAll(query);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin", "user")
+  async findOne(@Param("id") id: string) {
     return this.userService.findOne(id);
   }
 
@@ -21,15 +39,21 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
-  @Put(':id')
-  @UseGuards(JwtAuthGuard)
-  async update(@Param('id') id: string, @Body() updateUserDto: any) {
-    return this.userService.update(id, updateUserDto);
+  @Put(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin", "user")
+  async update(
+    @Param("id") id: string,
+    @Body() updateUserDto: any,
+    @Request() req: { user: UserPayload },
+  ) {
+    return this.userService.update(id, updateUserDto, req.user);
   }
 
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  async remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  @Delete(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  async remove(@Param("id") id: string, @Request() req: { user: UserPayload }) {
+    return this.userService.remove(id, req.user);
   }
 }

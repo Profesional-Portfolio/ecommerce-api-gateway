@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
+import { Module } from "@nestjs/common";
+import { UserController } from "./user.controller";
+import { UserService } from "./user.service";
+import { TransportModule } from "../transport/transport.module";
 
 @Module({
-  imports: [HttpModule],
+  imports: [TransportModule],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],
